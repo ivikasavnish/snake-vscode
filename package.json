@@ -2,7 +2,7 @@
   "name": "vscode-snake-game",
   "displayName": "Code Snake Game",
   "description": "Play snake game in your code editor - snake passes through empty lines and breaks code on collision!",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "vikasavnish",
   "repository": {
     "type": "git",

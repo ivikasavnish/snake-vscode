@@ -56,12 +56,19 @@ export class SnakeGame {
     }
 
     private initializeSnake() {
-        const middleLine = Math.floor(this.editor.document.lineCount / 2);
+        // Start at the top of the file, at the end of the first line
+        const firstLine = 0;
+        const firstLineLength = this.editor.document.lineAt(firstLine).text.length;
+        const startChar = Math.max(0, firstLineLength - 1);
+        
         this.snake = [
-            { line: middleLine, char: 5 },
-            { line: middleLine, char: 4 },
-            { line: middleLine, char: 3 }
+            { line: firstLine, char: startChar },
+            { line: firstLine, char: Math.max(0, startChar - 1) },
+            { line: firstLine, char: Math.max(0, startChar - 2) }
         ];
+        
+        // Scroll to top to show the snake
+        this.scrollToSnake();
     }
 
     private setupKeyBindings() {
@@ -123,6 +130,7 @@ export class SnakeGame {
         }
 
         this.checkTextCollision(newHead);
+        this.scrollToSnake();
         this.render();
     }
 
@@ -133,23 +141,38 @@ export class SnakeGame {
         switch (this.direction) {
             case 'up':
                 newHead.line = head.line - 1;
-                if (newHead.line < 0) newHead.line = lineCount - 1;
+                if (newHead.line < 0) {
+                    newHead.line = lineCount - 1;
+                }
                 break;
             case 'down':
                 newHead.line = head.line + 1;
-                if (newHead.line >= lineCount) newHead.line = 0;
+                if (newHead.line >= lineCount) {
+                    newHead.line = 0;
+                }
                 break;
             case 'left':
                 newHead.char = head.char - 1;
                 if (newHead.char < 0) {
+                    // Move to previous line at the end
+                    newHead.line = head.line - 1;
+                    if (newHead.line < 0) {
+                        newHead.line = lineCount - 1;
+                    }
                     const lineLength = this.editor.document.lineAt(newHead.line).text.length;
                     newHead.char = Math.max(0, lineLength);
                 }
                 break;
             case 'right':
+                const currentLineLength = this.editor.document.lineAt(newHead.line).text.length;
                 newHead.char = head.char + 1;
-                const lineLength = this.editor.document.lineAt(newHead.line).text.length;
-                if (newHead.char > lineLength + 10) {
+                
+                // Move to next line if past end of current line
+                if (newHead.char > currentLineLength + 5) {
+                    newHead.line = head.line + 1;
+                    if (newHead.line >= lineCount) {
+                        newHead.line = 0;
+                    }
                     newHead.char = 0;
                 }
                 break;
@@ -305,6 +328,21 @@ export class SnakeGame {
 
     private updateStatusBar() {
         this.statusBar.text = `🐍 Snake Game | Score: ${this.score} | Length: ${this.snake.length} | ${this.pointsPerFood} pts/food`;
+    }
+
+    private scrollToSnake() {
+        if (this.snake.length === 0) {
+            return;
+        }
+
+        const head = this.snake[0];
+        const headLine = Math.max(0, Math.min(head.line, this.editor.document.lineCount - 1));
+        
+        // Create a range at the snake head position
+        const range = new vscode.Range(headLine, 0, headLine, 0);
+        
+        // Scroll to reveal the snake head, keeping it centered
+        this.editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
     }
 
     private gameOver() {
