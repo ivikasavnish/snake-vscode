@@ -87,32 +87,46 @@ class SnakeGame {
         this.scrollToSnake();
     }
     setupKeyBindings() {
-        this.keyListener = vscode.commands.registerCommand('type', (args) => {
-            if (!this.isRunning) {
-                return vscode.commands.executeCommand('default:type', args);
+        // Register arrow key commands
+        const upCommand = vscode.commands.registerCommand('snakegame.up', () => {
+            if (this.isRunning && this.direction !== 'down') {
+                this.direction = 'up';
+                console.log('Direction changed to: UP');
             }
-            const char = args.text;
-            if (char === '\u001b') {
-                this.gameOver();
-                return;
-            }
-            return vscode.commands.executeCommand('default:type', args);
         });
-        const changeDirection = (newDirection) => {
-            const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
-            if (this.direction !== opposites[newDirection]) {
-                this.direction = newDirection;
+        const downCommand = vscode.commands.registerCommand('snakegame.down', () => {
+            if (this.isRunning && this.direction !== 'up') {
+                this.direction = 'down';
+                console.log('Direction changed to: DOWN');
+            }
+        });
+        const leftCommand = vscode.commands.registerCommand('snakegame.left', () => {
+            if (this.isRunning && this.direction !== 'right') {
+                this.direction = 'left';
+                console.log('Direction changed to: LEFT');
+            }
+        });
+        const rightCommand = vscode.commands.registerCommand('snakegame.right', () => {
+            if (this.isRunning && this.direction !== 'left') {
+                this.direction = 'right';
+                console.log('Direction changed to: RIGHT');
+            }
+        });
+        const exitCommand = vscode.commands.registerCommand('snakegame.exit', () => {
+            this.gameOver();
+        });
+        // Store disposables
+        this.keyListener = {
+            dispose: () => {
+                upCommand.dispose();
+                downCommand.dispose();
+                leftCommand.dispose();
+                rightCommand.dispose();
+                exitCommand.dispose();
             }
         };
         vscode.commands.executeCommand('setContext', 'snakeGameActive', true);
-        const commands = [
-            vscode.commands.registerCommand('snakegame.up', () => changeDirection('up')),
-            vscode.commands.registerCommand('snakegame.down', () => changeDirection('down')),
-            vscode.commands.registerCommand('snakegame.left', () => changeDirection('left')),
-            vscode.commands.registerCommand('snakegame.right', () => changeDirection('right')),
-            vscode.commands.registerCommand('snakegame.exit', () => this.gameOver())
-        ];
-        commands.forEach(cmd => this.keyListener?.dispose);
+        console.log('Arrow key bindings registered. Press arrow keys to move!');
     }
     update() {
         if (!this.isRunning) {
@@ -139,6 +153,7 @@ class SnakeGame {
     }
     getNewHead(head) {
         const lineCount = this.editor.document.lineCount;
+        const MAX_COLS = 120;
         let newHead = { ...head };
         switch (this.direction) {
             case 'up':
@@ -156,24 +171,14 @@ class SnakeGame {
             case 'left':
                 newHead.char = head.char - 1;
                 if (newHead.char < 0) {
-                    // Move to previous line at the end
-                    newHead.line = head.line - 1;
-                    if (newHead.line < 0) {
-                        newHead.line = lineCount - 1;
-                    }
-                    const lineLength = this.editor.document.lineAt(newHead.line).text.length;
-                    newHead.char = Math.max(0, lineLength);
+                    // Wrap to end of line (max 120 cols)
+                    newHead.char = MAX_COLS - 1;
                 }
                 break;
             case 'right':
-                const currentLineLength = this.editor.document.lineAt(newHead.line).text.length;
                 newHead.char = head.char + 1;
-                // Move to next line if past end of current line
-                if (newHead.char > currentLineLength + 5) {
-                    newHead.line = head.line + 1;
-                    if (newHead.line >= lineCount) {
-                        newHead.line = 0;
-                    }
+                // Wrap at 120 columns
+                if (newHead.char >= MAX_COLS) {
                     newHead.char = 0;
                 }
                 break;
