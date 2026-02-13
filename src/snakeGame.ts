@@ -238,9 +238,10 @@ export class SnakeGame {
         const snakeHeadDecorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: '#00ff00',
             color: '#000000',
-            border: '2px solid #ffff00',
-            borderRadius: '3px',
-            fontWeight: 'bold'
+            border: '3px solid #ffff00',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            textDecoration: 'none; font-size: 1.2em; box-shadow: 0 0 15px #00ff00;'
         });
 
         // Render snake body
@@ -277,20 +278,22 @@ export class SnakeGame {
         if (this.food) {
             const foodDecorationType = vscode.window.createTextEditorDecorationType({
                 backgroundColor: '#ffff00',
-                color: '#ff0000',
+                color: '#000000',
                 before: {
-                    contentText: '⭐',
+                    contentText: '⭐⭐⭐',
                     color: '#ffff00',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    textDecoration: 'none; font-size: 1.5em; text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;'
                 },
-                border: '2px solid #ff0000',
-                borderRadius: '3px'
+                border: '3px solid #ff0000',
+                borderRadius: '5px',
+                textDecoration: 'none; animation: blink 1s linear infinite;'
             });
 
             const foodLine = Math.max(0, Math.min(this.food.line, this.editor.document.lineCount - 1));
             const foodChar = Math.max(0, this.food.char);
             this.editor.setDecorations(foodDecorationType, [
-                new vscode.Range(foodLine, foodChar, foodLine, foodChar + 1)
+                new vscode.Range(foodLine, foodChar, foodLine, foodChar + 3)
             ]);
             this.foodDecoration = foodDecorationType;
         }
