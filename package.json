@@ -2,7 +2,7 @@
   "name": "vscode-snake-game",
   "displayName": "Code Snake Game",
   "description": "Play snake game in your code editor - snake passes through empty lines and breaks code on collision!",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "vikasavnish",
   "repository": {
     "type": "git",
@@ -41,6 +41,14 @@
         "title": "Snake Game: Move Right"
       },
       {
+        "command": "snakegame.pause",
+        "title": "Snake Game: Pause/Resume"
+      },
+      {
+        "command": "snakegame.stop",
+        "title": "Snake Game: Stop Game"
+      },
+      {
         "command": "snakegame.exit",
         "title": "Snake Game: Exit"
       }
@@ -72,7 +80,12 @@
         "when": "snakeGameActive"
       },
       {
-        "command": "snakegame.exit",
+        "command": "snakegame.pause",
+        "key": "space",
+        "when": "snakeGameActive"
+      },
+      {
+        "command": "snakegame.stop",
         "key": "escape",
         "when": "snakeGameActive"
       }

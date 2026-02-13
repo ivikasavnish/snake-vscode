@@ -38,10 +38,11 @@ const vscode = __importStar(require("vscode"));
 class SnakeGame {
     constructor(editor) {
         this.snake = [];
-        this.direction = 'right';
+        this.direction = 'left'; // Start moving left from end of line
         this.food = null;
         this.score = 0;
         this.isRunning = false;
+        this.isPaused = false;
         this.gameLoop = null;
         this.keyListener = null;
         this.snakeDecorations = [];
@@ -50,13 +51,52 @@ class SnakeGame {
         this.hiddenLines = new Set();
         this.gameOverCallback = null;
         this.pointsPerFood = 1;
+        this.commentPatterns = { single: [], multi: [] };
+        this.maxColumn = 120;
         this.editor = editor;
         this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
         this.calculatePoints();
+        this.detectLanguage();
+        this.calculateViewportWidth();
     }
     calculatePoints() {
         const lineCount = this.editor.document.lineCount;
         this.pointsPerFood = Math.max(1, Math.floor(lineCount / 10));
+    }
+    detectLanguage() {
+        const languageId = this.editor.document.languageId;
+        const fileName = this.editor.document.fileName;
+        // Define comment patterns for different languages
+        if (languageId === 'javascript' || languageId === 'typescript' ||
+            languageId === 'java' || languageId === 'c' || languageId === 'cpp' ||
+            languageId === 'csharp' || languageId === 'go' || languageId === 'rust') {
+            this.commentPatterns.single = [/\/\/.*/];
+            this.commentPatterns.multi = [/\/\*[\s\S]*?\*\//];
+        }
+        else if (languageId === 'python' || languageId === 'ruby' ||
+            languageId === 'shell' || languageId === 'bash') {
+            this.commentPatterns.single = [/#.*/];
+            this.commentPatterns.multi = [/""".+?"""/s, /'''.+?'''/s];
+        }
+        else if (languageId === 'html' || languageId === 'xml') {
+            this.commentPatterns.multi = [/<!--[\s\S]*?-->/];
+        }
+        else if (languageId === 'css' || languageId === 'scss' || languageId === 'less') {
+            this.commentPatterns.multi = [/\/\*[\s\S]*?\*\//];
+        }
+        console.log(`Language detected: ${languageId}, comment patterns loaded`);
+    }
+    calculateViewportWidth() {
+        // Get visible range to determine viewport width
+        const visibleRanges = this.editor.visibleRanges;
+        if (visibleRanges.length > 0) {
+            const firstRange = visibleRanges[0];
+            this.maxColumn = Math.min(150, Math.max(80, firstRange.end.character + 20));
+        }
+        else {
+            this.maxColumn = 120;
+        }
+        console.log(`Viewport width set to: ${this.maxColumn} columns`);
     }
     start() {
         this.isRunning = true;
@@ -74,43 +114,54 @@ class SnakeGame {
         vscode.window.showInformationMessage(`🐍 Snake Game Started! Use arrow keys. File: ${this.editor.document.lineCount} lines (${this.pointsPerFood} pts/food). Look for GREEN blocks!`, 'Got it!');
     }
     initializeSnake() {
-        // Start at the top of the file, at the end of the first line
+        // Start at the end of the first line (right side focus)
         const firstLine = 0;
-        const firstLineLength = this.editor.document.lineAt(firstLine).text.length;
-        const startChar = Math.max(0, firstLineLength - 1);
+        const firstLineText = this.editor.document.lineAt(firstLine).text;
+        const lineLength = firstLineText.length;
+        // Start at the end or at maxColumn, whichever is smaller
+        const startChar = Math.min(lineLength, this.maxColumn - 3);
         this.snake = [
             { line: firstLine, char: startChar },
-            { line: firstLine, char: Math.max(0, startChar - 1) },
-            { line: firstLine, char: Math.max(0, startChar - 2) }
+            { line: firstLine, char: startChar + 1 },
+            { line: firstLine, char: startChar + 2 }
         ];
+        // Start moving left from the end
+        this.direction = 'left';
         // Scroll to top to show the snake
         this.scrollToSnake();
+        console.log(`Snake initialized at line ${firstLine}, column ${startChar}, moving LEFT`);
     }
     setupKeyBindings() {
         // Register arrow key commands
         const upCommand = vscode.commands.registerCommand('snakegame.up', () => {
-            if (this.isRunning && this.direction !== 'down') {
+            if (this.isRunning && !this.isPaused && this.direction !== 'down') {
                 this.direction = 'up';
                 console.log('Direction changed to: UP');
             }
         });
         const downCommand = vscode.commands.registerCommand('snakegame.down', () => {
-            if (this.isRunning && this.direction !== 'up') {
+            if (this.isRunning && !this.isPaused && this.direction !== 'up') {
                 this.direction = 'down';
                 console.log('Direction changed to: DOWN');
             }
         });
         const leftCommand = vscode.commands.registerCommand('snakegame.left', () => {
-            if (this.isRunning && this.direction !== 'right') {
+            if (this.isRunning && !this.isPaused && this.direction !== 'right') {
                 this.direction = 'left';
                 console.log('Direction changed to: LEFT');
             }
         });
         const rightCommand = vscode.commands.registerCommand('snakegame.right', () => {
-            if (this.isRunning && this.direction !== 'left') {
+            if (this.isRunning && !this.isPaused && this.direction !== 'left') {
                 this.direction = 'right';
                 console.log('Direction changed to: RIGHT');
             }
+        });
+        const pauseCommand = vscode.commands.registerCommand('snakegame.pause', () => {
+            this.togglePause();
+        });
+        const stopCommand = vscode.commands.registerCommand('snakegame.stop', () => {
+            this.stopGame();
         });
         const exitCommand = vscode.commands.registerCommand('snakegame.exit', () => {
             this.gameOver();
@@ -122,6 +173,8 @@ class SnakeGame {
                 downCommand.dispose();
                 leftCommand.dispose();
                 rightCommand.dispose();
+                pauseCommand.dispose();
+                stopCommand.dispose();
                 exitCommand.dispose();
             }
         };
@@ -129,7 +182,7 @@ class SnakeGame {
         console.log('Arrow key bindings registered. Press arrow keys to move!');
     }
     update() {
-        if (!this.isRunning) {
+        if (!this.isRunning || this.isPaused) {
             return;
         }
         const head = this.snake[0];
@@ -151,9 +204,34 @@ class SnakeGame {
         this.scrollToSnake();
         this.render();
     }
+    togglePause() {
+        if (!this.isRunning) {
+            return;
+        }
+        this.isPaused = !this.isPaused;
+        this.updateStatusBar();
+        if (this.isPaused) {
+            vscode.window.showInformationMessage('⏸️ Game PAUSED! Press Space to resume, ESC to stop.');
+            console.log('Game PAUSED');
+        }
+        else {
+            vscode.window.showInformationMessage('▶️ Game RESUMED!');
+            console.log('Game RESUMED');
+        }
+    }
+    stopGame() {
+        if (!this.isRunning) {
+            return;
+        }
+        vscode.window.showInformationMessage(`🛑 Game STOPPED! Final Score: ${this.score} | Length: ${this.snake.length}`);
+        console.log('Game manually stopped by user');
+        this.dispose();
+        if (this.gameOverCallback) {
+            this.gameOverCallback();
+        }
+    }
     getNewHead(head) {
         const lineCount = this.editor.document.lineCount;
-        const MAX_COLS = 120;
         let newHead = { ...head };
         switch (this.direction) {
             case 'up':
@@ -161,24 +239,30 @@ class SnakeGame {
                 if (newHead.line < 0) {
                     newHead.line = lineCount - 1;
                 }
+                // Align to end of new line
+                const upLineLength = this.editor.document.lineAt(newHead.line).text.length;
+                newHead.char = Math.min(head.char, Math.min(upLineLength, this.maxColumn - 1));
                 break;
             case 'down':
                 newHead.line = head.line + 1;
                 if (newHead.line >= lineCount) {
                     newHead.line = 0;
                 }
+                // Align to end of new line
+                const downLineLength = this.editor.document.lineAt(newHead.line).text.length;
+                newHead.char = Math.min(head.char, Math.min(downLineLength, this.maxColumn - 1));
                 break;
             case 'left':
                 newHead.char = head.char - 1;
                 if (newHead.char < 0) {
-                    // Wrap to end of line (max 120 cols)
-                    newHead.char = MAX_COLS - 1;
+                    // Wrap to right side
+                    newHead.char = this.maxColumn - 1;
                 }
                 break;
             case 'right':
                 newHead.char = head.char + 1;
-                // Wrap at 120 columns
-                if (newHead.char >= MAX_COLS) {
+                // Wrap at maxColumn
+                if (newHead.char >= this.maxColumn) {
                     newHead.char = 0;
                 }
                 break;
@@ -199,16 +283,42 @@ class SnakeGame {
         }
         const line = this.editor.document.lineAt(pos.line);
         const lineText = line.text;
+        // Empty lines don't cause collision
         if (lineText.trim().length === 0) {
             return;
         }
+        // Check if position has text
         if (pos.char >= 0 && pos.char < lineText.length && lineText[pos.char].trim() !== '') {
+            const char = lineText[pos.char];
+            // Check if we're in a comment
+            if (this.isInComment(lineText, pos.char)) {
+                // Eating comment! Give bonus points
+                this.score += Math.floor(this.pointsPerFood / 2);
+                this.updateStatusBar();
+                console.log('💬 Ate comment character! Bonus points!');
+            }
+            // Hide the line temporarily
             this.hiddenLines.add(pos.line);
             setTimeout(() => {
                 this.hiddenLines.delete(pos.line);
                 this.render();
             }, 1000);
         }
+    }
+    isInComment(lineText, charPos) {
+        // Check single-line comments
+        for (const pattern of this.commentPatterns.single) {
+            const match = lineText.match(pattern);
+            if (match && match.index !== undefined) {
+                const commentStart = match.index;
+                if (charPos >= commentStart) {
+                    return true;
+                }
+            }
+        }
+        // For now, just check single-line comments
+        // Multi-line comment detection would require document-level parsing
+        return false;
     }
     spawnFood() {
         const lineCount = this.editor.document.lineCount;
@@ -311,7 +421,14 @@ class SnakeGame {
         }
     }
     updateStatusBar() {
-        this.statusBar.text = `🐍 Snake Game | Score: ${this.score} | Length: ${this.snake.length} | ${this.pointsPerFood} pts/food`;
+        let statusText = `🐍 Snake Game | Score: ${this.score} | Length: ${this.snake.length} | ${this.pointsPerFood} pts/food`;
+        if (this.isPaused) {
+            statusText = `⏸️ PAUSED | ${statusText} | Space=Resume ESC=Stop`;
+        }
+        else if (this.isRunning) {
+            statusText = `▶️ ${statusText} | Space=Pause ESC=Stop`;
+        }
+        this.statusBar.text = statusText;
     }
     scrollToSnake() {
         if (this.snake.length === 0) {
