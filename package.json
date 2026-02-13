@@ -1,0 +1,91 @@
+{
+  "name": "vscode-snake-game",
+  "displayName": "Code Snake Game",
+  "description": "Play snake game in your code editor - snake passes through empty lines and breaks code on collision!",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:snakegame.start"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "snakegame.start",
+        "title": "Snake Game: Start Game"
+      },
+      {
+        "command": "snakegame.up",
+        "title": "Snake Game: Move Up"
+      },
+      {
+        "command": "snakegame.down",
+        "title": "Snake Game: Move Down"
+      },
+      {
+        "command": "snakegame.left",
+        "title": "Snake Game: Move Left"
+      },
+      {
+        "command": "snakegame.right",
+        "title": "Snake Game: Move Right"
+      },
+      {
+        "command": "snakegame.exit",
+        "title": "Snake Game: Exit"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "snakegame.start",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s"
+      },
+      {
+        "command": "snakegame.up",
+        "key": "up",
+        "when": "snakeGameActive"
+      },
+      {
+        "command": "snakegame.down",
+        "key": "down",
+        "when": "snakeGameActive"
+      },
+      {
+        "command": "snakegame.left",
+        "key": "left",
+        "when": "snakeGameActive"
+      },
+      {
+        "command": "snakegame.right",
+        "key": "right",
+        "when": "snakeGameActive"
+      },
+      {
+        "command": "snakegame.exit",
+        "key": "escape",
+        "when": "snakeGameActive"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3"
+  }
+}
