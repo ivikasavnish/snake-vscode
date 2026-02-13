@@ -41,8 +41,17 @@ export class SnakeGame {
         this.gameLoop = setInterval(() => this.update(), 150);
         this.statusBar.show();
         this.updateStatusBar();
+        
+        // Force initial render
+        this.render();
+        
+        console.log('Snake Game Started!');
+        console.log('Snake position:', this.snake);
+        console.log('Food position:', this.food);
+        
         vscode.window.showInformationMessage(
-            `Snake Game Started! Use arrow keys. File size: ${this.editor.document.lineCount} lines (${this.pointsPerFood} pts/food)`
+            `🐍 Snake Game Started! Use arrow keys. File: ${this.editor.document.lineCount} lines (${this.pointsPerFood} pts/food). Look for GREEN blocks!`,
+            'Got it!'
         );
     }
 
@@ -202,33 +211,63 @@ export class SnakeGame {
     private render() {
         this.clearDecorations();
 
-        const snakeDecorationType = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'rgba(0, 255, 0, 0.3)',
-            border: '1px solid lime',
+        // Render snake head (more visible)
+        const snakeHeadDecorationType = vscode.window.createTextEditorDecorationType({
+            backgroundColor: '#00ff00',
+            color: '#000000',
+            border: '2px solid #ffff00',
+            borderRadius: '3px',
+            fontWeight: 'bold'
+        });
+
+        // Render snake body
+        const snakeBodyDecorationType = vscode.window.createTextEditorDecorationType({
+            backgroundColor: '#00cc00',
+            color: '#000000',
+            border: '1px solid #00ff00',
             borderRadius: '2px'
         });
 
-        const snakeRanges = this.snake.map(pos => {
-            const line = Math.max(0, Math.min(pos.line, this.editor.document.lineCount - 1));
-            const char = Math.max(0, pos.char);
-            return new vscode.Range(line, char, line, char + 1);
-        });
+        // Head is first element
+        if (this.snake.length > 0) {
+            const head = this.snake[0];
+            const headLine = Math.max(0, Math.min(head.line, this.editor.document.lineCount - 1));
+            const headChar = Math.max(0, head.char);
+            this.editor.setDecorations(snakeHeadDecorationType, [
+                new vscode.Range(headLine, headChar, headLine, headChar + 1)
+            ]);
+            this.snakeDecorations.push(snakeHeadDecorationType);
+        }
 
-        this.editor.setDecorations(snakeDecorationType, snakeRanges);
-        this.snakeDecorations.push(snakeDecorationType);
+        // Body is remaining elements
+        if (this.snake.length > 1) {
+            const bodyRanges = this.snake.slice(1).map(pos => {
+                const line = Math.max(0, Math.min(pos.line, this.editor.document.lineCount - 1));
+                const char = Math.max(0, pos.char);
+                return new vscode.Range(line, char, line, char + 1);
+            });
+
+            this.editor.setDecorations(snakeBodyDecorationType, bodyRanges);
+            this.snakeDecorations.push(snakeBodyDecorationType);
+        }
 
         if (this.food) {
             const foodDecorationType = vscode.window.createTextEditorDecorationType({
+                backgroundColor: '#ffff00',
+                color: '#ff0000',
                 before: {
                     contentText: '⭐',
-                    color: 'yellow'
-                }
+                    color: '#ffff00',
+                    fontWeight: 'bold'
+                },
+                border: '2px solid #ff0000',
+                borderRadius: '3px'
             });
 
             const foodLine = Math.max(0, Math.min(this.food.line, this.editor.document.lineCount - 1));
             const foodChar = Math.max(0, this.food.char);
             this.editor.setDecorations(foodDecorationType, [
-                new vscode.Range(foodLine, foodChar, foodLine, foodChar)
+                new vscode.Range(foodLine, foodChar, foodLine, foodChar + 1)
             ]);
             this.foodDecoration = foodDecorationType;
         }
