@@ -101,7 +101,7 @@ class SnakeGame {
     start() {
         this.isRunning = true;
         this.initializeSnake();
-        this.spawnFood();
+        this.spawnFood(); // Initial food spawn
         this.setupKeyBindings();
         this.gameLoop = setInterval(() => this.update(), 150);
         this.statusBar.show();
@@ -111,7 +111,8 @@ class SnakeGame {
         console.log('Snake Game Started!');
         console.log('Snake position:', this.snake);
         console.log('Food position:', this.food);
-        vscode.window.showInformationMessage(`🐍 Snake Game Started! Use arrow keys. File: ${this.editor.document.lineCount} lines (${this.pointsPerFood} pts/food). Look for GREEN blocks!`, 'Got it!');
+        console.log(`Max column: ${this.maxColumn}`);
+        vscode.window.showInformationMessage(`🐍 Snake Game Started! Arrow keys to move, SPACE to pause, ESC to stop. Max width: ${this.maxColumn} cols`, 'Got it!');
     }
     initializeSnake() {
         // Start at the end of the first line (right side focus)
@@ -192,9 +193,11 @@ class SnakeGame {
             return;
         }
         this.snake.unshift(newHead);
+        // Check if food is eaten
         if (this.food && newHead.line === this.food.line && newHead.char === this.food.char) {
             this.score += this.pointsPerFood;
-            this.spawnFood();
+            console.log(`🎯 Food eaten! Score: ${this.score}`);
+            this.spawnFood(); // Spawn new food immediately
             this.updateStatusBar();
         }
         else {
@@ -239,29 +242,25 @@ class SnakeGame {
                 if (newHead.line < 0) {
                     newHead.line = lineCount - 1;
                 }
-                // Align to end of new line
-                const upLineLength = this.editor.document.lineAt(newHead.line).text.length;
-                newHead.char = Math.min(head.char, Math.min(upLineLength, this.maxColumn - 1));
+                // Keep same column when moving up/down
                 break;
             case 'down':
                 newHead.line = head.line + 1;
                 if (newHead.line >= lineCount) {
                     newHead.line = 0;
                 }
-                // Align to end of new line
-                const downLineLength = this.editor.document.lineAt(newHead.line).text.length;
-                newHead.char = Math.min(head.char, Math.min(downLineLength, this.maxColumn - 1));
+                // Keep same column when moving up/down
                 break;
             case 'left':
                 newHead.char = head.char - 1;
                 if (newHead.char < 0) {
-                    // Wrap to right side
+                    // Wrap to right side at maxColumn
                     newHead.char = this.maxColumn - 1;
                 }
                 break;
             case 'right':
                 newHead.char = head.char + 1;
-                // Wrap at maxColumn
+                // Wrap at maxColumn - allow movement in empty space beyond text
                 if (newHead.char >= this.maxColumn) {
                     newHead.char = 0;
                 }
@@ -325,16 +324,22 @@ class SnakeGame {
         let attempts = 0;
         while (attempts < 100) {
             const line = Math.floor(Math.random() * lineCount);
-            const lineLength = Math.max(10, this.editor.document.lineAt(line).text.length);
-            const char = Math.floor(Math.random() * lineLength);
+            // Spawn food anywhere within maxColumn range
+            const char = Math.floor(Math.random() * this.maxColumn);
             const pos = { line, char };
             if (!this.checkCollision(pos)) {
                 this.food = pos;
+                console.log(`⭐ New food spawned at line ${line}, col ${char}`);
                 return;
             }
             attempts++;
         }
-        this.food = { line: Math.floor(lineCount / 2), char: 10 };
+        // Fallback: spawn at a safe location
+        this.food = {
+            line: Math.floor(lineCount / 2),
+            char: Math.floor(this.maxColumn / 2)
+        };
+        console.log(`⭐ Food spawned at fallback position`);
     }
     render() {
         this.clearDecorations();
