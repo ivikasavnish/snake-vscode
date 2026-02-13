@@ -20,7 +20,7 @@ Play Snake game right in your VS Code editor with a unique twist - break your co
 ### Installation
 
 **Option 1: Download & Install VSIX (Easiest!)**
-1. Download the latest release: [vscode-snake-game-1.0.5.vsix](https://github.com/ivikasavnish/snake-vscode/raw/main/vscode-snake-game-1.0.5.vsix)
+1. Download the latest release: [vscode-snake-game-1.0.6.vsix](https://github.com/ivikasavnish/snake-vscode/raw/main/vscode-snake-game-1.0.6.vsix)
 2. Open VS Code
 3. Go to Extensions (`Ctrl+Shift+X` or `Cmd+Shift+X`)
 4. Click the `...` menu → `Install from VSIX`
