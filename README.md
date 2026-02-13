@@ -22,7 +22,7 @@ Play Snake game right in your VS Code editor with a unique twist - break your co
 **Option 1: Install from Repository**
 1. Clone this repository:
    ```bash
-   git clone https://github.com/ivikasavnish/uno-vscode.git
+   git clone https://github.com/ivikasavnish/snake-vscode.git
    cd uno-vscode
    ```
 
@@ -34,7 +34,7 @@ Play Snake game right in your VS Code editor with a unique twist - break your co
 
 **Option 3: Build from Source**
 ```bash
-git clone https://github.com/ivikasavnish/uno-vscode.git
+git clone https://github.com/ivikasavnish/snake-vscode.git
 cd uno-vscode
 tsc -p .
 # Press F5 in VS Code to test
@@ -104,7 +104,7 @@ Press F5 in VS Code
 
 ## 🐛 Known Issues
 
-- None yet! Report issues at [GitHub Issues](https://github.com/ivikasavnish/uno-vscode/issues)
+- None yet! Report issues at [GitHub Issues](https://github.com/ivikasavnish/snake-vscode/issues)
 
 ## 🤝 Contributing
 

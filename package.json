@@ -6,7 +6,7 @@
   "publisher": "vikasavnish",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ivikasavnish/uno-vscode"
+    "url": "https://github.com/ivikasavnish/snake-vscode"
   },
   "engines": {
     "vscode": "^1.75.0"

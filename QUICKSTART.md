@@ -6,7 +6,7 @@
 
 ```bash
 # Clone and run
-git clone https://github.com/ivikasavnish/uno-vscode.git
+git clone https://github.com/ivikasavnish/snake-vscode.git
 cd uno-vscode
 code .
 ```
@@ -19,7 +19,7 @@ If you want to use it in your regular VS Code without the development host:
 
 ```bash
 # Clone the repository
-git clone https://github.com/ivikasavnish/uno-vscode.git
+git clone https://github.com/ivikasavnish/snake-vscode.git
 cd uno-vscode
 
 # Package the extension
@@ -76,7 +76,7 @@ npx vsce package
 
 ## 🐛 Found a Bug?
 
-Report it at: https://github.com/ivikasavnish/uno-vscode/issues
+Report it at: https://github.com/ivikasavnish/snake-vscode/issues
 
 ---
 
